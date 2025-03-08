@@ -125,6 +125,16 @@ class Regression(object):
             common_norm=False, figsize=figsize)  # distributions
         return figs
 
+    def correlate(self, intercorr=True, p_stars=True, **kwargs):
+        """
+        Calculate correlation between each predictor and outcome
+        (and among predictors if `intercorr` is True).
+        """
+        out = glmax.ax.calculate_correlation(
+            self.data, variables=[self.model["y"]] + self.model["x"],
+            p_stars=p_stars, **kwargs)
+        return out
+
     def run(self, formula=None, family=None, link=None):
         """Run the regression model.
 
@@ -141,4 +151,5 @@ class Regression(object):
             raise ValueError("No model specified.")
         if family is None and link is None:
             sm.OLS()
+
 

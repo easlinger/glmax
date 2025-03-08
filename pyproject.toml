@@ -29,6 +29,7 @@ dependencies = [
     "statsmodels>=0.14.4",
     "scikit-misc",
     "statannotations",
+    "stats",
 
     # Plotting
     "matplotlib>=3.9.0",
