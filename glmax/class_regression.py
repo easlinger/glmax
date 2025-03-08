@@ -9,7 +9,7 @@ Base class for regression and moderation analysis and visualization.
 
 import os
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
+# import statsmodels.formula.api as smf
 import seaborn as sns
 import pandas as pd
 import glmax
@@ -98,7 +98,8 @@ class Regression(object):
         tabs["numeric"] = self.data.describe()  # numeric descriptives
         figs["pair"] = sns.pairplot(
             self.data[[self.model["y"]] + self.model["x"]],
-            diag_kind=kind_dist, diag_kws=diag_kws)  # pairplot (no hue)
+            diag_kind=kind_dist, diag_kws=diag_kws, height=figsize[1] / 5,
+            aspect=figsize[0] / figsize[1])  # pairplot (no hue)
         cat_vars = [i for i in [self.model["y"]] + self.model[
             "x"] if i not in tabs["numeric"]]  # categorical variables
         if len(cat_vars) > 0:
