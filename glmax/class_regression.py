@@ -96,10 +96,6 @@ class Regression(object):
         grid_kws = {"diag_sharey": sharey, **kwargs.pop("grid_kws", {})}
 
         tabs["numeric"] = self.data.describe()  # numeric descriptives
-        figs["pair"] = sns.pairplot(
-            self.data[[self.model["y"]] + self.model["x"]],
-            diag_kind=kind_dist, diag_kws=diag_kws, height=figsize[1] / 5,
-            aspect=figsize[0] / figsize[1])  # pairplot (no hue)
         cat_vars = [i for i in [self.model["y"]] + self.model[
             "x"] if i not in tabs["numeric"]]  # categorical variables
         if len(cat_vars) > 0:
