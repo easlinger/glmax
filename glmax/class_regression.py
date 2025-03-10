@@ -10,11 +10,7 @@ Base class for regression and moderation analysis and visualization.
 import os
 # import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from statsmodels.genmod.families import NegativeBinomial
-from statsmodels.discrete.count_model import ZeroInflatedNegativeBinomialP
-from statsmodels.discrete.count_model import ZeroInflatedPoisson
-from statsmodels.genmod.families import Poisson
-from statsmodels.miscmodels.ordinal_model import OrderedModel
+import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import glmax
@@ -140,6 +136,27 @@ class Regression(object):
             p_stars=p_stars, **kwargs)
         return out
 
+    def plot(self, lowess=True, figsize=None, plot_dist=True, **kwargs):
+        """
+        Plot best line fit (and, optionally, distributions) for each
+        predictor-outcome pair.
+        """
+        if figsize is None:
+            figsize = (10, 10)
+        if plot_dist is False:
+            fig, axes = plt.subplots(*glmax.pl.square_grid(len(
+                self.model["x"])), figsize=figsize, squeeze=False)
+        else:
+            fig, axes = {}, None
+        for i, x in enumerate(self.model["x"]):
+            if plot_dist is True:
+                fig[x] = sns.jointplot(data=self.data, x=x, y=self.model["y"],
+                                       kind="reg", lowess=lowess, **kwargs)
+            else:
+                sns.regplot(data=self.data, x=x, y=self.model["y"],
+                            lowess=lowess, ax=axes.flatten()[i], **kwargs)
+        return fig, axes
+
     def run(self, formula=None, family=None, link=None,
             show=True, inplace=True,
             kws_model=None, kws_diagnostics=False, **kwargs):
@@ -178,6 +195,7 @@ class Regression(object):
                 to pass to the `statsmodels` model fitting function.
         """
         if formula is not None:  # if new formula specified...
+            orig_model = {**self.model}  # ...save original model
             self.model = formula  # ...set model dictionary attribute
         kws_model = {} if kws_model is None else {**kws_model}
         extras = {}  # will change later for models with more outputs
@@ -212,4 +230,6 @@ class Regression(object):
                     print(f"\n\n{k}:\n\n {v}\n")
         if inplace is True:
             self.results = model
+        else:
+            self.model = orig_model
         return model, summary, extras
