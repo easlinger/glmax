@@ -8,8 +8,13 @@ Base class for regression and moderation analysis and visualization.
 
 
 import os
-import statsmodels.api as sm
-# import statsmodels.formula.api as smf
+# import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.genmod.families import NegativeBinomial
+from statsmodels.discrete.count_model import ZeroInflatedNegativeBinomialP
+from statsmodels.discrete.count_model import ZeroInflatedPoisson
+from statsmodels.genmod.families import Poisson
+from statsmodels.miscmodels.ordinal_model import OrderedModel
 import seaborn as sns
 import pandas as pd
 import glmax
@@ -135,7 +140,9 @@ class Regression(object):
             p_stars=p_stars, **kwargs)
         return out
 
-    def run(self, formula=None, family=None, link=None):
+    def run(self, formula=None, family=None, link=None,
+            show=True, inplace=True,
+            kws_model=None, kws_diagnostics=False, **kwargs):
         """Run the regression model.
 
         Args:
@@ -143,13 +150,66 @@ class Regression(object):
                 formula string. If None, the model will be run using
                 the model specified in the class constructor (if any).
                 If a model was specified in the constructor,
-                this argument will override it.
+                this argument will override it. SPECIFYING THIS WILL
+                OVERRIDE `self.model`.
+            family (str, optional): The name of the family to use
+                for non-Gaussian models. If None, the model will be
+                run as a Gaussian model. Examples: 'OrderedModel',
+                'Poisson', 'NegativeBinomial', 'ZeroInflatedPoisson',
+                'ZeroInflatedNegativeBinomialP', etc.
+                Not case sensitive.
+            link (str, optional): The name of the link function to
+                use for non-Gaussian models. If None, the model will
+                be run as a Gaussian model.
+            show (bool, optional): If True, print the model summary.
+            inplace (bool, optional): If True, store the results
+                in the `self.results` attribute.
+            kws_model (dict, optional): A dictionary of
+                keyword arguments to pass to the `statsmodels`
+                model construction function.
+            kws_diagnostics (bool or dict, optional): If True,
+                run diagnostics (checking model assumptions/violations,
+                e.g., heteroskedasticity) using the default arguments
+                in `glmax.ax.run_regression_diagnostics()`. If False,
+                don't run diagnostics. If a dictionary, pass the
+                dictionary as keyword arguments to
+                `glmax.ax.run_regression_diagnostics()`.
+            kwargs (dict, optional): Additional keyword arguments
+                to pass to the `statsmodels` model fitting function.
         """
-        if formula is not None:
-            self.model = formula
+        if formula is not None:  # if new formula specified...
+            self.model = formula  # ...set model dictionary attribute
+        kws_model = {} if kws_model is None else {**kws_model}
+        extras = {}  # will change later for models with more outputs
         if self.model is None:
             raise ValueError("No model specified.")
-        if family is None and link is None:
-            sm.OLS()
-
-
+        if family is None and link is None:  # Gaussian
+            model = smf.ols(formula=self.model["formula"],
+                            data=self.data).fit(**kwargs)  # fit OLS
+            summary = model.summary()
+        elif isinstance(family, str) and family.lower(
+                ) in glmax.constants.models:  # non-Gaussian
+            f_x = glmax.constants.models[family.lower()]
+            if "from_formula" in dir(f_x):
+                f_x = f_x.from_formula
+            model = f_x(formula=self.model["formula"],
+                        data=self.data).fit(**kwargs)  # fit non-Gaussian
+            summary = model.summary()
+            print("\nPseudo-R-Squared: ", model.prsquared, "\n")
+            if family in ["binary", "logit"]:
+                extras["marginal_effects"] = model.get_margeff().summary()
+        else:
+            raise NotImplementedError(f"{family} not implemented.")
+        if isinstance(kws_diagnostics, dict) or kws_diagnostics is True:
+            kws_diagnostics = {**kws_diagnostics} if isinstance(
+                kws_diagnostics, dict) else {}
+            fig, dis, summ_text = glmax.ax.run_regression_diagnostics(
+                model, **kws_diagnostics)  # assumption/violation diagnostics
+        if show is True:
+            print(summary)
+            if len(extras) > 0:
+                for k, v in extras.items():
+                    print(f"\n\n{k}:\n\n {v}\n")
+        if inplace is True:
+            self.results = model
+        return model, summary, extras

@@ -12,8 +12,10 @@ from statsmodels.tools.tools import maybe_unwrap_results
 from statsmodels.graphics.gofplots import ProbPlot
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from typing import Type
+from IPython.display import display
 import pandas as pd
 import numpy as np
+from glmax.visualization.helpers_plot import square_grid
 
 style_talk = "seaborn-talk"  # refer to plt.style.available
 
@@ -133,12 +135,12 @@ class LinearRegDiagnostic():
         if plot_context not in plt.style.available:
             plot_context = "default"
         with plt.style.context(plot_context):
-            fig, a_x = plt.subplots(nrows=2, ncols=2, figsize=(10,10))
-            self.residual_plot(ax=a_x[0,0])
-            self.qq_plot(ax=a_x[0,1])
-            self.scale_location_plot(ax=a_x[1,0])
+            fig, a_x = plt.subplots(nrows=2, ncols=2, figsize=(10, 10))
+            self.residual_plot(ax=a_x[0, 0])
+            self.qq_plot(ax=a_x[0, 1])
+            self.scale_location_plot(ax=a_x[1, 0])
             self.leverage_plot(
-                ax=a_x[1,1], high_leverage_threshold=kwargs.get(
+                ax=a_x[1, 1], high_leverage_threshold=kwargs.get(
                     "high_leverage_threshold"),
                 cooks_threshold=kwargs.get("cooks_threshold"))
             plt.show()
@@ -205,10 +207,10 @@ class LinearRegDiagnostic():
                 color="C3")
 
         a_x.set_title("Normal Q-Q (Check Normality of Residuals)",
-                     fontweight="bold")
+                      fontweight="bold")
         a_x.set_xlabel("Theoretical Quantiles")
         a_x.set_ylabel("Standardized Residuals")
-        return a_x
+        return fig, a_x
 
     def scale_location_plot(self, a_x=None):
         """
@@ -222,7 +224,7 @@ class LinearRegDiagnostic():
 
         residual_norm_abs_sqrt = np.sqrt(np.abs(self.residual_norm))
 
-        a_x.scatter(self.y_predict, residual_norm_abs_sqrt, alpha=0.5);
+        a_x.scatter(self.y_predict, residual_norm_abs_sqrt, alpha=0.5)
         sns.regplot(
             x=self.y_predict,
             y=residual_norm_abs_sqrt,
@@ -243,7 +245,7 @@ class LinearRegDiagnostic():
         a_x.set_title("Scale-Location (Check Error Homoscedasticity)",
                       fontweight="bold")
         a_x.set_xlabel("Fitted values")
-        a_x.set_ylabel(r"$\sqrt{|\mathrm{Standardized\ Residuals}|}$");
+        a_x.set_ylabel(r"$\sqrt{|\mathrm{Standardized\ Residuals}|}$")
         return a_x
 
     def leverage_plot(self, a_x=None, high_leverage_threshold=False,
@@ -262,7 +264,7 @@ class LinearRegDiagnostic():
         a_x.scatter(
             self.leverage,
             self.residual_norm,
-            alpha=0.5);
+            alpha=0.5)
 
         sns.regplot(
             x=self.leverage,
@@ -276,18 +278,16 @@ class LinearRegDiagnostic():
         # annotations
         leverage_top_3 = np.flip(np.argsort(self.cooks_distance), 0)[:3]
         for i in leverage_top_3:
-            a_x.annotate(
-                i,
-                xy=(self.leverage[i], self.residual_norm[i]),
-                color = "C3")
+            a_x.annotate(i, xy=(
+                self.leverage[i], self.residual_norm[i]), color="C3")
 
         factors = []
         if cooks_threshold == "baseR" or cooks_threshold is None:
             factors = [1, 0.5]
         elif cooks_threshold == "convention":
-            factors = [4/self.nresids]
+            factors = [4 / self.nresids]
         elif cooks_threshold == "dof":
-            factors = [4/ (self.nresids - self.nparams)]
+            factors = [4 / (self.nresids - self.nparams)]
         else:
             raise ValueError("threshold_method: convention, dof, or baseR")
         for i, factor in enumerate(factors):
@@ -334,17 +334,14 @@ class LinearRegDiagnostic():
                 .sort_values("VIF Factor")
                 .round(2))
 
-
     def __cooks_dist_line(self, factor):
         """
         Helper function for plotting Cook"s distance curves
         """
         p = self.nparams
-        formula = lambda x: np.sqrt((factor * p * (1 - x)) / x)
-        x = np.linspace(0.001, max(self.leverage), 50)
-        y = formula(x)
-        return x, y
-
+        x_x = np.linspace(0.001, max(self.leverage), 50)
+        y_y = np.sqrt((factor * p * (1 - x_x)) / x_x)
+        return x_x, y_y
 
     def __qq_top_resid(self, quantiles, top_residual_indices):
         """
@@ -356,7 +353,7 @@ class LinearRegDiagnostic():
         for resid_index in top_residual_indices:
             y = self.residual_norm[resid_index]
             is_negative = y < 0
-            if previous_is_neg == None or previous_is_neg == is_negative:
+            if previous_is_neg is None or previous_is_neg == is_negative:
                 offset += 1
             else:
                 quant_index -= offset

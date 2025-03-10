@@ -7,6 +7,7 @@ Helper functions for plotting.
 """
 
 import math
+import pandas as pd
 import numpy as np
 
 

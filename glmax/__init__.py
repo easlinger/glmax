@@ -9,6 +9,7 @@ from . import analysis as ax
 from . import simulation as sm
 from . import visualization as pl
 from . import class_regression, constants
+from .constants import print_models
 
 mod = ["ax", "pl", "pp", "tl", "sm", "Regression"]
 sys.modules.update({f"{__name__}.{m}": globals()[m] for m in mod})

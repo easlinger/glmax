@@ -85,6 +85,8 @@ def parse_formula(formula: str):
             warnings.warn(f"Interaction variables {', '.join(missing_preds)}"
                           " added explicitly as predictors.")
             preds += missing_preds
+    else:
+        ixs_lists = None
 
     # TODO: Add warning if lower-order interactions not included
     # (e.g., x1:x2:x3 specified, but x1:x2 not specified)
