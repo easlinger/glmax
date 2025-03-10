@@ -95,7 +95,6 @@ class Regression(object):
         diag_kws = kwargs.pop("diag_kws", {} if kind_dist == "kde" else {
             "cut": 0, "fill": fill})
         grid_kws = {"diag_sharey": sharey, **kwargs.pop("grid_kws", {})}
-
         tabs["numeric"] = self.data.describe()  # numeric descriptives
         cat_vars = [i for i in [self.model["y"]] + self.model[
             "x"] if i not in tabs["numeric"]]  # categorical variables
@@ -145,14 +144,14 @@ class Regression(object):
             figsize = (10, 10)
         if plot_dist is False:
             fig, axes = plt.subplots(*glmax.pl.square_grid(len(
-                self.model["x"])), figsize=figsize, squeeze=False)
-        else:
-            fig, axes = {}, None
+                self.model["x"])), figsize=figsize, squeeze=False)  # subplots
+        else:  # if doing jointplot, can't put on individual axes
+            fig, axes = {}, None  # store individual jointplots in dictionary
         for i, x in enumerate(self.model["x"]):
-            if plot_dist is True:
+            if plot_dist is True:  # plot distributions on margins of graph
                 fig[x] = sns.jointplot(data=self.data, x=x, y=self.model["y"],
                                        kind="reg", lowess=lowess, **kwargs)
-            else:
+            else:  # just normal regplot (no KDE/histogram)
                 sns.regplot(data=self.data, x=x, y=self.model["y"],
                             lowess=lowess, ax=axes.flatten()[i], **kwargs)
         return fig, axes
